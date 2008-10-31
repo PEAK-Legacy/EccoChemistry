@@ -36,7 +36,7 @@ scripts, such as synchronization, importers, exporters, etc.  An example::
     Overhaul the whatzit: 2008-11-01
     Upload this module to PyPI: 2008-11-07 20:30:00
 
-    >>> for t in +Task.effort:  # ascending sort by folder
+    >>> for t in +Task.effort:  # ascending sort by folder (desc. uses "-")
     ...     print "%s: %s hrs" % (t.text, t.effort)
     Contemplate navel: 0.25 hrs
     Upload this module to PyPI: 0.5 hrs
@@ -96,8 +96,8 @@ Please consult the complete `EccoChemistry developer's guide`_ for more details.
 Questions, comments, and bug reports for this package should be directed to the
 `PEAK mailing list`_.
 
-.. EccoDDE developer's guide: http://peak.telecommunity.com/DevCenter/EccoDDE
-.. EccoChemistry developer's guide: http://peak.telecommunity.com/DevCenter/EccoChemistry#toc
+.. _EccoDDE developer's guide: http://peak.telecommunity.com/DevCenter/EccoDDE
+.. _EccoChemistry developer's guide: http://peak.telecommunity.com/DevCenter/EccoChemistry#toc
 .. _PEAK mailing list: http://www.eby-sarna.com/mailman/listinfo/peak/
 
 .. _toc:
@@ -112,7 +112,7 @@ Undocumented/untested Features:
 
 * other query ops (==, !=, <=, >, >=, .startswith, .with_text, .without, -)
 
-* writing to Item.text, Item(**kw), Item().update()
+* writing to Item.text, Item(``**kw``), Item().update()
 
 * value conversions, deleting values
 
