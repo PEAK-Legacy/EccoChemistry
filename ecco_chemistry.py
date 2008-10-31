@@ -164,8 +164,12 @@ class Container(object):
 
 class Folder(object):
     """Folder-based property"""
+
+    ftype = None
     
     def __init__(self, name_or_id, create=False):
+        if create and self.ftype is None:
+            raise TypeError("You can only create Folder subclasses")
         if isinstance(name_or_id, basestring):
             fids = Ecco.GetFoldersByName(name_or_id)
             self.name = name_or_id
@@ -180,7 +184,10 @@ class Folder(object):
             self.id = name_or_id
             self.name = Ecco.GetFolderName(self.id)
 
-        if Ecco.GetFolderType(self.id) != self.ftype:
+        ftype = Ecco.GetFolderType(self.id)
+        if self.ftype is None:
+            self.__class__ = folder_classes[ftype]
+        elif ftype != self.ftype:
             raise TypeError("%s is not a %s" %
                 (name_or_id, self.__class__.__name__)
             )
@@ -201,8 +208,6 @@ class Folder(object):
         if value is None: return ''
         return value
 
-
-
     decorate(staticmethod)
     def decode(value):
         return value
@@ -213,8 +218,17 @@ class Folder(object):
             return Container(item, self)
         if isinstance(key, Item):
             return self.__get__(key)
-        raise TypeError, key    # XXX
+        if isinstance(key, int):
+            return self.decode(Ecco.GetFolderValues(key, self.id))
+        raise TypeError, key
 
+    def __setitem__(self, key, value):
+        if isinstance(key, Item):
+            return self.__set__(key, value)
+        if isinstance(key, int):
+            Ecco.SetFolderValues(key, self.id, self.encode(value))
+        raise TypeError, key
+        
     def __contains__(self, item):
         """Is item in this folder?"""
         if isinstance(item, Item):
@@ -223,6 +237,11 @@ class Folder(object):
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.name)
+
+    children = property(lambda self: map(Folder, all_folders()[self.id][1]))
+    parent   = property(lambda self: Folder(all_folders()[self.id][0]))
+        
+
 
 
 class TextFolder(Folder):
@@ -242,7 +261,6 @@ class CheckmarkFolder(Folder):
     decorate(staticmethod)
     def decode(value):
         return bool(value)
-    
 
 class DateFolder(Folder):
     ftype = FolderType.Date
@@ -281,6 +299,29 @@ class NumericFolder(Folder):
             return Decimal(value)
         return int(value)
         
+
+folder_classes = [
+    TextFolder, PopupFolder, CheckmarkFolder, DateFolder, NumericFolder
+]
+
+folder_classes = dict([(f.ftype, f) for f in folder_classes])
+
+def all_folders():
+    """Return a mapping of folder ids to (parentid,[childids]) pairs"""
+    info, stack = {}, []
+    parent, children = None, []
+    for fid, depth in Ecco.GetFolderOutline():
+        while depth<len(stack):
+            parent, children = stack.pop()
+            #ignore, children = info[parent]
+        children.append(fid)
+        stack.append((parent,children))
+        children = []
+        info[fid] = parent, children
+        parent = fid
+    return info
+
+
 
 
 

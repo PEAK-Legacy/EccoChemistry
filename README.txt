@@ -53,7 +53,15 @@ scripts, such as synchronization, importers, exporters, etc.  An example::
 
     >>> t4 = Task.serial.setdefault('Q22', "Another task", priority="Low")
     >>> t4.serial
-    'Q22'  
+    'Q22'
+
+    >>> for t in Task.startswith("O"): print t.text
+    Overhaul the whatzit
+    Oops
+
+    >>> for t in Task.with_text("e"): print t.text
+    >>> for t in Task.without_text("e"): print t.text
+    
 
 Please note a few important limitations:
 
@@ -78,9 +86,6 @@ You can work around some of these limitations by appropriate use of the
 API, and you can also create items and folders using ids retrieved from the
 ``EccoDDE`` API::
 
-    >>> Task(t4.id).text
-    'Another task'
-
     >>> ec.CheckmarkFolder(ec.CheckmarkFolder('PhoneBook').id).name
     'PhoneBook'
 
@@ -90,7 +95,13 @@ API, and you can also create items and folders using ids retrieved from the
     Upload this module to PyPI
     Contemplate navel
 
+    >>> t5 = Task(t4.id)
+    >>> t5.text
+    'Another task'
 
+    >>> t4.text = "Oops"
+    >>> t5.text
+    'Oops'
 
 Please consult the complete `EccoChemistry developer's guide`_ for more details.
 Questions, comments, and bug reports for this package should be directed to the
@@ -112,7 +123,7 @@ Undocumented/untested Features:
 
 * other query ops (==, !=, <=, >, >=, .startswith, .with_text, .without, -)
 
-* writing to Item.text, Item(``**kw``), Item().update()
+* Item(``**kw``), Item().update()
 
 * value conversions, deleting values
 
@@ -129,8 +140,8 @@ Undocumented/untested Features:
 
 Unimplemented Features:
 
-* Polymorphic item/folder lookups (i.e., determine appropriate subtype when
-  calling ``Folder(id)`` or ``SomeItemClass(id)``)
+* Polymorphic item lookups (i.e., determine appropriate subtype when calling
+  ``SomeItemClass(id)``)
 
 * Fast validity filtering (required fields + filter function over field names)
 
@@ -142,7 +153,20 @@ Unimplemented Features:
 
 * ``Folder.__setitem__`` (e.g. ``aFolder[anItem] = value``)
 
-* Folder parent/child info
+
+Folder parent/child info::
+
+    >>> f = ec.Folder('New Columns')
+
+    >>> f.children
+    [TextFolder('Net Location'),
+     DateFolder('Recurring Note Dates'),
+     NumericFolder('Effort Hours'),
+     PopupFolder('Priority'),
+     TextFolder('Task Serial #')]
+
+    >>> f.parent
+    CheckmarkFolder('Ecco Folders')
 
 
 -------------------
