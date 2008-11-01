@@ -55,6 +55,28 @@ scripts, such as synchronization, importers, exporters, etc.  An example::
     >>> t4.serial
     'Q22'
 
+    >>> t4.parent = t3  # Set parent item
+    >>> t4.parent.text
+    'Contemplate navel'
+
+    >>> [t.text for t in t3.children]   # Setting parent prepends to children
+    ['Another task']
+
+    >>> t3.children.prepend(t1)     # Children have prepend/append methods
+    >>> t3.children.append(t2)
+    >>> [t.text for t in t3.children]
+    ['Overhaul the whatzit', 'Another task', 'Upload this module to PyPI']
+
+    >>> t4.children = t3.children   # Can assign to an iterable of items
+    >>> [t.text for t in t3.children]   # item can't be its own child, so stays
+    ['Another task']
+    >>> [t.text for t in t4.children]   # ...and the others get moved
+    ['Overhaul the whatzit', 'Upload this module to PyPI']
+
+    >>> t4.parent = None    # setting parent to None makes it a top-level item
+    >>> list(t3.children)   # and removes it from the previous parent
+    []    
+
     #>>> for t in Task.startswith("O"): print t.text
     Overhaul the whatzit
     Oops
@@ -65,21 +87,24 @@ scripts, such as synchronization, importers, exporters, etc.  An example::
 
 Please note a few important limitations:
 
-* Mapping classes MUST NOT be defined until *after* the appropriate file is
+* ``Item`` subclasses MUST NOT be defined until *after* the appropriate file is
   loaded in Ecco; i.e., your script must set up the Ecco connection **before**
-  defining its classes!  (You may wish to put your classes in a separate
-  module, and delay its import until then.)
+  defining its subclasses!  (You may wish to put your subclasses in a separate
+  module and delay its import until the connection is set up.)
 
-* Parent/child traversal isn't supported (yet)
-
-* Polymorphic types aren't supported (yet)
+* All ``Item`` subclasses in a program must be defined against (and used with)
+  exactly ONE open Ecco file during the program's runtime.  Failure to adhere
+  to this requirement may produce (possibly silent) data corruption and errors!
+  (You can use generic ``Item`` and ``Folder`` instances with as many Ecco
+  files as you wish, as long as you only use them while their corresponding
+  Ecco file is open.)
 
 * Date/time ranges are not currently supported and may cause errors
 
 * You can't mix sorting and filtering, nor filter on more than one field
   (This may be improved in a future version.)
-  
-You can work around some of these limitations by appropriate use of the
+
+Some operations not supported by EccoChemistry can still be performed via the  
 ``Ecco`` singleton, which is an ``ecco_dde.EccoDDE`` instance.  (See the
 `EccoDDE developer's guide`_ for more information on its API.)  "Item" and
 "Folder" objects have ``id`` attributes that can be passed to the ``EccoDDE``
@@ -95,7 +120,7 @@ API, and you can also create items and folders using ids retrieved from the
     Upload this module to PyPI
     Contemplate navel
 
-    >>> t5 = Task(t4.id)
+    >>> t5 = Task(t4)
     >>> t5.text
     'Another task'
 
@@ -137,9 +162,6 @@ Undocumented/untested Features:
 
 * folder-type operations (e.g. ``for t in (aFolder[Task]=="X"):``)
 
-
-Unimplemented Features:
-
 * Polymorphic item lookups (i.e., determine appropriate subtype when calling
   ``SomeItemClass(id)``)
 
@@ -172,6 +194,8 @@ Folder parent/child info::
 -------------------
 Internals and Tests
 -------------------
+
+XXX Folders should be renameable or else .name should be read-only
 
 XXX::
 

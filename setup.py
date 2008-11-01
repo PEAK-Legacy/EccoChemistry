@@ -6,7 +6,7 @@ from setuptools import setup
 
 # Metadata
 PROJECT = 'EccoChemistry'
-VERSION = '0.1'
+VERSION = '0.4a1'
 TAGLINE = 'SQLAlchemy-like interface for import/export/sync with the Ecco PIM'
 MODULES = ['ecco_chemistry']
 REQUIRES, LINKS = ['EccoDDE','DecoratorTools'], []
