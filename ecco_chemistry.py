@@ -100,11 +100,11 @@ class Children(object):
             int(i) for i in _ItemChildren(self.itemtype, int(ob), 1) if i!=ob
         ])
         if value:
-            Ecco.InsertItem(int(ob), [int(i) for i in value if i!=ob])
+            it = self.itemtype or type(ob)
+            Ecco.InsertItem(int(ob), [int(it(i)) for i in value if i!=ob])
 
     def __delete__(self, ob):
         self.__set__(ob, ())
-
 
 
 
@@ -208,22 +208,23 @@ class Item(classy, int):
     __metaclass__ = ItemClass
     __slots__ = ()  # XXX should keep in subclasses
     def __new__(cls, id_or_text, **kw):
+        vals = attrs = ()
         if isinstance(id_or_text, basestring):
             d = cls.default_values.copy()
             d.update(kw)
-            if d:
-                vals, attrs, extra = cls._attrvalues(d)
-            else:
-                vals = attrs = []
-            self = super(Item, cls).__new__(cls, Ecco.CreateItem(id_or_text, vals))
-            for k, v in attrs: setattr(self, k, v)
+            if d: vals, attrs, extra = cls._attrvalues(d)
+            cls = _find_item_subclass(cls, None, vals, True)
+            id_or_text = Ecco.CreateItem(id_or_text,vals)
         else:
-            if '__class__' not in kw:
-                # XXX error handling
-                cls = _find_item_subclass(cls, id_or_text) or cls
-            self = super(Item, cls).__new__(cls, id_or_text)
-            if kw:
-                self.update(**kw)
+            if kw: vals, attrs, extra = cls._attrvalues(kw)
+            if '__class__' in kw:
+                cls = kw.pop('__class__')   # fast path for collections
+            else:
+                cls = _find_item_subclass(cls, id_or_text, vals, True)
+            if vals: Ecco.SetFolderValues(int(self), *zip(*vals))
+        self = super(Item, cls).__new__(cls, id_or_text)
+        if attrs:
+            for k, v in attrs: setattr(self, k, v)
         return self
 
     required_values = dict()
@@ -235,7 +236,6 @@ class Item(classy, int):
 
     def text(self):
         return Ecco.GetItemText(int(self))
-
     def _set_text(self, value):
         Ecco.SetItemText(int(self), value)
 
@@ -309,20 +309,20 @@ class Item(classy, int):
     decorate(classmethod)
     def upgrade(cls, itemid, **kw):
         """Upgrade `itemid` to this class by initializing required values"""
-        d = cls.default_values.copy()
-        d.update(kw)
-        vals, attrs, extra = self._attrvalues(cls.default_values)
         fids = dict.fromkeys(Ecco.GetItemFolders(itemid))
-        # Add only non-empty values for not-present fields
-        vals = [(fid,val) for fid, val in vals if fid not in fids and val!='']
-        if vals:
-            Ecco.SetFolderValues(int(self), *zip(*vals))
-        attrs.update(kw)
-        return cls(itemid, **attrs)
+        d = cls.default_values.copy()
+        for k, v in d.items():
+            if v is not None:
+                descr = getattr(cls, k)
+                if isinstance(descr, Container) and descr.folder.id in fids:
+                    del d[k]
+        d.update(kw)
+        return cls(itemid, **d)
 
     parent = Parent()
     children = Children()
     all_children = Children(depth=0)
+
 
 
 
@@ -409,7 +409,7 @@ class Container(object):
 
 
 class Folder(object):
-    """Folder-based property"""
+    """Folder-based property/item container"""
 
     ftype = None
 
@@ -572,16 +572,23 @@ def all_folders():
 
 
 
-def _find_item_subclass(cls, itemid):
-    fids = Ecco.GetItemFolders(itemid)
+def _find_item_subclass(cls, itemid=None, data=(), required=False):
     get = _folder_bits.get
     mask, values = 0, []
-    for fid in fids:
-        bit = get(fid, 0)
-        if bit:
-            values.append(fid)
-            mask |= bit
-    values = dict(zip(values, Ecco.GetFolderValues(itemid, values)))
+    if itemid is not None:
+        fids = Ecco.GetItemFolders(itemid)
+        for fid in fids:
+            bit = get(fid, 0)
+            if bit:
+                values.append(fid)
+                mask |= bit
+        values = dict(zip(values, Ecco.GetFolderValues(itemid, values)))
+    else:
+        values = {}
+    if data:
+        values.update(data)
+        mask |= reduce(operator.or_, [get(fid,0) for fid,val in data], 0)
+
     matches = []
     match = None
     candidates = [cls]
@@ -598,20 +605,13 @@ def _find_item_subclass(cls, itemid):
                     matches.append(subclass)
         if matches:
             if len(matches)>1:
-                raise TypeError("Validation ambiguity:", itemid, matches)
+                raise TypeError("Validation ambiguity:",itemid or None,matches)
             match = matches.pop()
             candidates = match.__subclasses__()
+        elif match is None and required:
+            raise TypeError # XXX error message
         else:
             return match
-
-
-
-
-
-
-
-
-
 
 def additional_tests():
     import doctest

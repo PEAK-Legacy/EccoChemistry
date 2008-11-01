@@ -163,7 +163,7 @@ Undocumented/untested Features:
 * folder-type operations (e.g. ``for t in (aFolder[Task]=="X"):``)
 
 * Polymorphic item lookups (i.e., determine appropriate subtype when calling
-  ``SomeItemClass(id)``)
+  ``SomeItemClass(id)``) and upgrading
 
 * Fast validity filtering (required fields + filter function over field names)
 
