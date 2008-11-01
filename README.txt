@@ -55,12 +55,12 @@ scripts, such as synchronization, importers, exporters, etc.  An example::
     >>> t4.serial
     'Q22'
 
-    >>> for t in Task.startswith("O"): print t.text
+    #>>> for t in Task.startswith("O"): print t.text
     Overhaul the whatzit
     Oops
 
-    >>> for t in Task.with_text("e"): print t.text
-    >>> for t in Task.without_text("e"): print t.text
+    #>>> for t in Task.with_text("e"): print t.text
+    #>>> for t in Task.without_text("e"): print t.text
     
 
 Please note a few important limitations:
@@ -68,7 +68,7 @@ Please note a few important limitations:
 * Mapping classes MUST NOT be defined until *after* the appropriate file is
   loaded in Ecco; i.e., your script must set up the Ecco connection **before**
   defining its classes!  (You may wish to put your classes in a separate
-  module, and delay its import until you .)
+  module, and delay its import until then.)
 
 * Parent/child traversal isn't supported (yet)
 

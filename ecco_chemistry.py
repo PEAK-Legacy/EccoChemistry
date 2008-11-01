@@ -1,5 +1,5 @@
 from ecco_dde import EccoDDE, FolderType, format_date, format_datetime
-from peak.util.decorators import decorate
+from peak.util.decorators import decorate, classy
 import datetime
 from decimal import Decimal
 
@@ -7,11 +7,11 @@ Ecco = EccoDDE()
 
 __all__ = [
     'Ecco', 'Item', 'CheckmarkFolder', 'TextFolder', 'PopupFolder',
-    'DateFolder', 'NumericFolder',
+    'DateFolder', 'NumericFolder', 'Folder',
 ]
 
 
-class ItemClass(type):
+class ItemClass(type(classy)):
     """General item class"""
     
     def _query(self, *criteria):
@@ -39,9 +39,8 @@ class ItemClass(type):
 
 
 
-class Item(object):
+class Item(classy):
     """Base class for Ecco items"""
-
     __metaclass__ = ItemClass
 
     def __init__(self, id_or_text, **kw):
@@ -55,7 +54,6 @@ class Item(object):
 
     def text(self):
         return Ecco.GetItemText(self.id)
-
     def _set_text(self, value):
         Ecco.SetItemText(self.id, value)
 
@@ -79,10 +77,11 @@ class Item(object):
         Ecco.SetFolderValues(self.id, *zip(*vals))
         for k, v in attrs: setattr(self, k, v)
 
+    def is_valid(self):
+        return True
 
 class Container(object):
     """Find items in a given folder/itemtype"""
-    
     def __init__(self, itemtype, folder):
         self.folder = folder
         self.itemtype = itemtype
@@ -90,7 +89,8 @@ class Container(object):
 
     def _query(self, *criteria):
         for id in Ecco.GetFolderItems(self.folder.id, *criteria):
-            yield self.itemtype(id)
+            item = self.itemtype(id)
+            if item.is_valid(): yield item
 
     def __iter__(self):
         return self._query()        
@@ -215,7 +215,7 @@ class Folder(object):
     def __getitem__(self, key):
         """cls->Container or item->value"""
         if isinstance(key, ItemClass):
-            return Container(item, self)
+            return Container(key, self)
         if isinstance(key, Item):
             return self.__get__(key)
         if isinstance(key, int):
