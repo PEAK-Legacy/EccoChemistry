@@ -252,9 +252,15 @@ class Item(classy, int):
             if isinstance(base, ItemClass):
                 defaults.update(base.default_values)
                 required.update(base.required_values)
+
         defaults.update(cls.default_values)
         cls.default_values = defaults
         required.update(cls.required_values)
+        if cls.__container__:
+            required.setdefault('__container__', None)
+            if isinstance(cls.__container__,CheckmarkFolder):
+                defaults.setdefault('__container__',True)
+
         vals, attrs, extra = cls._attrvalues(required)
         assert not attrs    # XXX error message
         cls._exclusion_mask = 0
@@ -267,6 +273,7 @@ class Item(classy, int):
                 required[f] = None
             elif v is True and cls.__container__ is None:
                 cls.__container__ = Folder(f)
+
         cls._folder_mask = reduce(operator.or_, map(_folder_mask, required), 0)
         checker = cls._check_fields.im_func  # XXX error handling
         decoders = []
@@ -277,12 +284,15 @@ class Item(classy, int):
             folder = getattr(cls, attr).folder  # XXX error handling
             _folder_mask(folder.id) # ensure the value will be retrieved
             decoders.append((folder.id, folder.decode))
+
         def _validate_fields(values):
             return True
+
         if decoders:
             def _validate_fields(values, decoders=decoders):
                 vget = values.get
                 return checker(*[d(vget(f)) for f,d in decoders])
+
         cls._validate_fields = staticmethod(_validate_fields)
 
     decorate(classmethod)
@@ -306,6 +316,16 @@ class Item(classy, int):
         if vals: Ecco.SetFolderValues(int(self), *zip(*vals))
         for k, v in attrs: setattr(self, k, v)
 
+
+
+
+
+
+
+
+
+
+
     decorate(classmethod)
     def upgrade(cls, itemid, **kw):
         """Upgrade `itemid` to this class by initializing required values"""
@@ -322,6 +342,27 @@ class Item(classy, int):
     parent = Parent()
     children = Children()
     all_children = Children(depth=0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -597,7 +638,7 @@ def _find_item_subclass(cls, itemid=None, data=(), required=False):
             m = subclass._folder_mask
             if (mask & m)!=m or (mask & subclass._exclusion_mask):
                 continue
-            for k, v in subclass._required_values:
+            for k, v in subclass._required_values.iteritems():
                 if v!=values[k] and v is not None:
                     break
             else:
@@ -607,7 +648,7 @@ def _find_item_subclass(cls, itemid=None, data=(), required=False):
             if len(matches)>1:
                 raise TypeError("Validation ambiguity:",itemid or None,matches)
             match = matches.pop()
-            candidates = match.__subclasses__()
+            candidates = [c for c in match.__subclasses__() if '_validate_fields' in c.__dict__]
         elif match is None and required:
             raise TypeError # XXX error message
         else:
