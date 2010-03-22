@@ -221,7 +221,7 @@ class Item(classy, int):
                 cls = kw.pop('__class__')   # fast path for collections
             else:
                 cls = _find_item_subclass(cls, id_or_text, vals, True)
-            if vals: Ecco.SetFolderValues(int(self), *zip(*vals))
+            if vals: Ecco.SetFolderValues(id_or_text, *zip(*vals))
         self = super(Item, cls).__new__(cls, id_or_text)
         if attrs:
             for k, v in attrs: setattr(self, k, v)
@@ -258,7 +258,7 @@ class Item(classy, int):
         required.update(cls.required_values)
         if cls.__container__:
             required.setdefault('__container__', None)
-            if isinstance(cls.__container__,CheckmarkFolder):
+            if isinstance(cls.__container__.folder, CheckmarkFolder):
                 defaults.setdefault('__container__',True)
 
         vals, attrs, extra = cls._attrvalues(required)
@@ -423,7 +423,7 @@ class Container(object):
             raise KeyError("Multiple items for", key)
         if items:
             return items.pop()
-        return None
+        return default
 
     def __getitem__(self, key):
         """Look up item by unique key"""
@@ -509,7 +509,7 @@ class Folder(object):
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
-            Ecco.SetFolderValues(int(key), self.id, self.encode(value))
+            return Ecco.SetFolderValues(int(key), self.id, self.encode(value))
         raise TypeError, key
 
     def __contains__(self, item):
