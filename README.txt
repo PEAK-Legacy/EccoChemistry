@@ -146,7 +146,9 @@ Developer's Guide
 
 Undocumented/untested Features:
 
-* other query ops (==, !=, <=, >, >=, .startswith, .with_text, .without, -)
+* other query ops (==, !=, <=, >, >=, .startswith, .with_text, .without)
+
+* query intersections and unions
 
 * Item(``**kw``), Item().update()
 
@@ -174,6 +176,15 @@ Undocumented/untested Features:
 * Default repr() for items
 
 * ``Folder.__setitem__`` (e.g. ``aFolder[anItem] = value``)
+
+
+Descending sort::
+
+    >>> for t in -Task.effort:  # descending sort by folder
+    ...     print "%s: %s hrs" % (t.text, t.effort)
+    Overhaul the whatzit: 8 hrs
+    Upload this module to PyPI: 0.5 hrs
+    Contemplate navel: 0.25 hrs
 
 
 Folder parent/child info::

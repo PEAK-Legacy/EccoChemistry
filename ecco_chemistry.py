@@ -7,24 +7,24 @@ Ecco = EccoDDE()
 
 __all__ = [
     'Ecco', 'Item', 'CheckmarkFolder', 'TextFolder', 'PopupFolder',
-    'DateFolder', 'NumericFolder', 'Folder',
+    'DateFolder', 'NumericFolder', 'Folder', 'Parent', 'Children'
 ]
 
+def intersect(first, second, *rest):
+    ok = set(second)
+    for s in rest:
+        ok &= set(s)
+    for item in first:
+        if item in ok:
+            yield item
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def union(*sequences):
+    seen = {}
+    for seq in sequences:
+        for item in seq:
+            if item not in seen:
+                seen[item] = 1
+                yield item
 
 
 
@@ -171,7 +171,7 @@ class ItemClass(type(classy)):
         return self.__container__._query(*criteria)
 
     def __iter__(self):
-        return self._query()
+        return iter(self._query())
 
     def startswith(self, value):
         return self._query("IB", value)
@@ -369,18 +369,20 @@ class Item(classy, int):
 
 class Container(object):
     """Find items in a given folder/itemtype"""
-    def __init__(self, itemtype, folder):
+    def __init__(self, itemtype, folder, criteria=()):
         self.folder = folder
         self.itemtype = itemtype
         self.encode = self.folder.encode
+        self.criteria = criteria
 
     def _query(self, *criteria):
-        for id in Ecco.GetFolderItems(self.folder.id, *criteria):
+        return Container(self.itemtype, self.folder, self.criteria+criteria)
+
+    def __iter__(self):
+        for id in Ecco.GetFolderItems(self.folder.id, *self.criteria):
             cls = _find_item_subclass(self.itemtype, id)
             if cls is not None: yield cls(id, __class__=cls)
 
-    def __iter__(self):
-        return self._query()
     def __gt__(self, value):
         return self._query("GT", self.encode(value))
     def __ge__(self, value):
@@ -405,8 +407,9 @@ class Container(object):
     def __neg__(self):
         return self._query("vd")
 
+
     def __repr__(self):
-        return "Container(%s, %r)" % (self.itemtype.__name__, self.folder)
+        return "Container(%s, %r, %r)" % (self.itemtype.__name__, self.folder, self.criteria)
 
     def setdefault(self, __key, text, **defaults):
         """Look up item by unique key, and create if non-existent"""
@@ -438,13 +441,10 @@ class Container(object):
             return True
         return False
 
-
-
-
-
-
-
-
+    def __and__(self, other):  return intersect(self, other)
+    def __rand__(self, other): return intersect(other, self)
+    def __or__(self, other):  return union(self, other)
+    def __ror__(self, other): return union(other, self)
 
 
 
