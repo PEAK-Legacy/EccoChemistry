@@ -449,9 +449,50 @@ class Container(object):
 
 
 
+class FolderClass(type):
+    """Operator support for folders"""
+
+    def __iter__(self):
+        ftype = self.ftype
+        for fid, depth in Ecco.GetFolderOutline():
+            if ftype is None or Ecco.GetFolderType(fid)==ftype:
+                yield self(fid)
+
+    def __contains__(self, f):
+        return Ecco.GetFolderType(int(f))==(self.ftype or FolderType.CheckMark)
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Folder(object):
     """Folder-based property/item container"""
-
+    __metaclass__ = FolderClass
     ftype = None
 
     def __init__(self, name_or_id, create=False):
@@ -521,13 +562,13 @@ class Folder(object):
 
     children = property(lambda self: map(Folder, all_folders()[self.id][1]))
     parent   = property(lambda self: Folder(all_folders()[self.id][0]))
+    depth    = property(lambda self: all_folders()[self.id][2])
 
     def __iter__(self):
         return iter(Container(Item, self))
 
-
-
-
+    def __int__(self):
+        return self.id
 
 
 
@@ -605,7 +646,7 @@ def all_folders():
         children.append(fid)
         stack.append((parent,children))
         children = []
-        info[fid] = parent, children
+        info[fid] = parent, children, depth
         parent = fid
     return info
 

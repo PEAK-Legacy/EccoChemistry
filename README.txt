@@ -164,6 +164,8 @@ Undocumented/untested Features:
 
 * folder-type operations (e.g. ``for t in (aFolder[Task]=="X"):``)
 
+* folder hierarchy, depth, folder type iteration & containment
+
 * Polymorphic item lookups (i.e., determine appropriate subtype when calling
   ``SomeItemClass(id)``) and upgrading
 
